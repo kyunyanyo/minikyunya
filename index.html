@@ -20,36 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
-
-  <style>
-    /* Hero 이미지 바로 아래에 노출되는 고정 이미지 */
-    .hero-fixed-image {
-      padding: 0;
-      margin: 0;
-      background: transparent;
-    }
-
-    .hero-fixed-image[hidden] {
-      display: none !important;
-    }
-
-    .hero-fixed-image__inner {
-      width: 100%;
-      margin: 0 auto;
-      overflow: hidden;
-    }
-
-    .hero-fixed-image__photo {
-      display: block;
-      width: 100%;
-      height: auto;
-      object-fit: cover;
-    }
-  </style>
-  <script src="config.js"></script>
-</head>
-<body>
-
+  
   <!-- ─── Curtain (Simple Overlay) ─── -->
   <div id="curtain" class="curtain">
     <div class="curtain__content">
@@ -139,6 +110,34 @@
         <div class="story__photos" id="storyPhotos"></div>
       </div>
     </section>
+<style>
+    /* Hero 이미지 바로 아래에 노출되는 고정 이미지 */
+    .hero-fixed-image {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+    }
+
+    .hero-fixed-image[hidden] {
+      display: none !important;
+    }
+
+    .hero-fixed-image__inner {
+      width: 100%;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .hero-fixed-image__photo {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+  </style>
+  <script src="config.js"></script>
+</head>
+<body>
 
     <!-- Gallery Section -->
     <section class="section gallery" id="gallery">
