@@ -5,6 +5,20 @@ const CONFIG = {
   // ── 인사말과 Love Story 사이 고정 이미지 ──
   introFixedImage: {
     enabled: true,
+    src: "images/hero/fixed.jpg",
+    alt: "규현과 민지 웨딩 사진",
+    width: "100%",
+    maxWidth: "100%",
+    margin: "0 auto",
+    padding: "0 24px",
+    radius: "0px",
+    objectFit: "contain",
+    objectPosition: "center center"
+  },
+
+  // ── 인사말과 Love Story 사이 기존 이미지 ──
+  betweenGreetingStoryImage: {
+    enabled: true,
     src: "images/intro/between-greeting-story.jpg",
     alt: "규현과 민지 웨딩 사진",
     width: "100%",
