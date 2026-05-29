@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="styles.css">
 
   <style>
-    /* Love Story 배경 안에 포함되는 고정 이미지 + 인사말/Love Story 사이 기존 이미지 */
+    /* Love Story 아래 고정 이미지 + 인사말/Love Story 사이 기존 이미지 */
     .intro-fixed-image {
       width: var(--intro-fixed-width, 100%);
       max-width: var(--intro-fixed-max-width, 100%);
@@ -37,7 +37,21 @@
 
     .intro-fixed-image-section {
       display: block;
-      margin-top: 24px;
+      padding-top: 0;
+      padding-bottom: 32px;
+      margin-top: 0;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      background: transparent;
+    }
+
+    /* Love Story 배경 바로 아래에 hero/fixed 이미지가 붙어서 보이도록 상단 여백 제거 */
+    #introFixedImageSection,
+    #introFixedImageSection .section__inner,
+    #introFixedImageBlock {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
     }
 
     .intro-fixed-image-section[hidden],
@@ -58,7 +72,18 @@
     .between-greeting-story-image-section {
       display: block;
       padding-top: 0;
-      padding-bottom: 0;
+      padding-bottom: 32px;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 인사말과 Love Story 사이 이미지는 스크롤 애니메이션을 끄고 바로 고정 표시하여
+       Love Story 제목 애니메이션과 겹쳐 보이지 않게 처리 */
+    #betweenGreetingStoryImageBlock {
+      opacity: 1 !important;
+      transform: translate(var(--intro-fixed-x, 0px), var(--intro-fixed-y, 0px)) !important;
+      transition: none !important;
     }
 
     .between-greeting-story-image-section[hidden] {
@@ -77,8 +102,44 @@
       color: #ffffff;
     }
 
+    /* Love Story 제목 아래 밑줄 제거 */
     #story .section__divider {
-      background-color: rgba(255, 255, 255, 0.45);
+      display: none !important;
+    }
+
+    /* Love Story 섹션과 아래 hero/fixed 이미지 섹션 사이의 간격 제거 */
+    #story {
+      margin-bottom: 0 !important;
+    }
+
+    #story + #introFixedImageSection {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
+    /* Love Story 아래 images/hero/fixed 이미지는 좌우 여백 없이 전체 폭으로 현출 */
+    #introFixedImageSection .section__inner {
+      width: 100% !important;
+      max-width: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    #introFixedImageBlock {
+      width: 100% !important;
+      max-width: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    #introFixedImage {
+      width: 100% !important;
+      display: block !important;
     }
   </style>
   <script src="config.js"></script>
@@ -161,7 +222,7 @@
     <!-- Greeting과 Love Story 사이 기존 고정 이미지 -->
     <section class="section between-greeting-story-image-section" id="betweenGreetingStoryImageSection" hidden>
       <div class="section__inner">
-        <div class="intro-fixed-image animate-item" data-animate="fade-up" id="betweenGreetingStoryImageBlock">
+        <div class="intro-fixed-image" id="betweenGreetingStoryImageBlock">
           <img class="intro-fixed-image__photo" id="betweenGreetingStoryImage" src="" alt="웨딩 사진" loading="lazy">
         </div>
       </div>
@@ -174,15 +235,17 @@
         <div class="section__divider animate-item" data-animate="fade-in"></div>
         <p class="story__text animate-item" data-animate="fade-up" id="storyContent"></p>
         <div class="story__photos" id="storyPhotos"></div>
-        <!-- Love Story 배경 안에 포함되는 고정 이미지 -->
-        <div class="intro-fixed-image-section" id="introFixedImageSection" hidden>
-          <div class="intro-fixed-image animate-item" data-animate="fade-up" id="introFixedImageBlock">
-            <img class="intro-fixed-image__photo" id="introFixedImage" src="" alt="웨딩 사진" loading="lazy">
-          </div>
-        </div>
       </div>
     </section>
 
+    <!-- Love Story 아래 고정 이미지 -->
+    <section class="section intro-fixed-image-section" id="introFixedImageSection" hidden>
+      <div class="section__inner">
+        <div class="intro-fixed-image" id="introFixedImageBlock">
+          <img class="intro-fixed-image__photo" id="introFixedImage" src="" alt="웨딩 사진" loading="lazy">
+        </div>
+      </div>
+    </section>
 
     <!-- Gallery Section -->
     <section class="section gallery" id="gallery">
@@ -272,7 +335,7 @@
   <script src="script.js"></script>
 
   <script>
-    // CONFIG.introFixedImage 설정값으로 Love Story 항목 바로 밑에 추가 이미지를 표시합니다.
+    // CONFIG.introFixedImage 설정값으로 Love Story 아래에 추가 이미지를 표시합니다.
     (function () {
       function setCssVar(element, name, value) {
         if (value !== undefined && value !== null && value !== '') {
@@ -287,7 +350,6 @@
         var block = document.getElementById('introFixedImageBlock');
         var img = document.getElementById('introFixedImage');
         var story = document.getElementById('story');
-        var storyInner = story ? story.querySelector('.section__inner') : null;
 
         var fixedImage = CONFIG.introFixedImage || {};
         var imageSrc = fixedImage.src || fixedImage.image || fixedImage.path || '';
@@ -297,9 +359,9 @@
           return;
         }
 
-        // 정확한 위치: Love Story 섹션 내부, 기존 Love Story 사진들 바로 아래
-        if (storyInner && !storyInner.contains(section)) {
-          storyInner.appendChild(section);
+        // 정확한 위치: Love Story 섹션 바로 아래, 갤러리 섹션 바로 위
+        if (story && story.parentNode && section.previousElementSibling !== story) {
+          story.insertAdjacentElement('afterend', section);
         }
 
         img.alt = fixedImage.alt || '웨딩 사진';
