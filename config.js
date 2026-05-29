@@ -55,7 +55,7 @@ const CONFIG = {
   // ── 우리의 이야기 ──
   story: {
     title: "Love Story",
-    content: "The days we shared together slowly became a lifetime."
+    content: ""
   },
 
   // ── 마음 전하실 곳 ──
