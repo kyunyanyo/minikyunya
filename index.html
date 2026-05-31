@@ -24,6 +24,17 @@
   <!-- Love Story 관련 이미지 선로딩: 스크롤 시 지연 없이 빠르게 현출되도록 설정 -->
   <link rel="preload" as="image" href="images/intro/between-greeting-story.jpg" fetchpriority="high">
   <link rel="preload" as="image" href="images/hero/fixed.jpg" fetchpriority="high">
+  <!-- 첫 방문/캐시 없음 상태에서 Love Story 첫 이미지들이 늦게 뜨는 것을 줄이기 위한 낮은 우선순위 선로딩 -->
+  <link rel="preload" as="image" href="images/story/1.jpg" fetchpriority="low">
+  <link rel="preload" as="image" href="images/story/2.jpg" fetchpriority="low">
+  <link rel="preload" as="image" href="images/story/3.jpg" fetchpriority="low">
+  <!-- 갤러리는 아래쪽 영역이라 prefetch로 조용히 미리 받아두어 빠른 스크롤 시 지연을 줄임 -->
+  <link rel="prefetch" as="image" href="images/gallery/1.jpg">
+  <link rel="prefetch" as="image" href="images/gallery/2.jpg">
+  <link rel="prefetch" as="image" href="images/gallery/3.jpg">
+  <link rel="prefetch" as="image" href="images/gallery/4.jpg">
+  <link rel="prefetch" as="image" href="images/gallery/5.jpg">
+  <link rel="prefetch" as="image" href="images/gallery/6.jpg">
 
   <style>
     /* Love Story 아래 고정 이미지 + 인사말/Love Story 사이 기존 이미지 */
@@ -347,7 +358,10 @@
         'images/intro/between-greeting-story.webp',
         'images/hero/fixed.jpg',
         'images/hero/fixed.png',
-        'images/hero/fixed.webp'
+        'images/hero/fixed.webp',
+        'images/story/1.jpg',
+        'images/story/2.jpg',
+        'images/story/3.jpg'
       ];
 
       preloadTargets.forEach(function (src) {

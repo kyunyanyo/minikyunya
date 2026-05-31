@@ -36,34 +36,66 @@
      Image Auto-Detection
      ═══════════════════════════════════════════ */
 
-  function loadImagesFromFolder(folder, maxAttempts = 50) {
-    return new Promise(resolve => {
-        const images = [];
-        let current = 1;
-        let consecutiveFails = 0;
+  function loadImagesFromFolder(folder, maxAttempts = 50, options = {}) {
+    // 기존 방식은 폴더 끝까지 탐색한 뒤에야 화면에 출력되어
+    // 첫 방문/캐시 없음 상태에서 images/story 마지막 번호 이후 404 확인 시간까지
+    // 사용자가 그대로 기다리는 문제가 있었습니다.
+    if (typeof maxAttempts === 'object') {
+      options = maxAttempts;
+      maxAttempts = options.maxAttempts || 50;
+    }
 
-        function tryNext() {
-            if (current > maxAttempts || consecutiveFails >= 3) {
-                resolve(images);
-                return;
-            }
-            const img = new Image();
-            const path = `images/${folder}/${current}.jpg`;
-            img.onload = function() {
-                images.push(path);
-                consecutiveFails = 0;
-                current++;
-                tryNext();
-            };
-            img.onerror = function() {
-                consecutiveFails++;
-                current++;
-                tryNext();
-            };
-            img.src = path;
+    const stopAfterFails = options.stopAfterFails ?? 3;
+    const priorityCount = options.priorityCount || 0;
+    const onFound = typeof options.onFound === 'function' ? options.onFound : null;
+    const onComplete = typeof options.onComplete === 'function' ? options.onComplete : null;
+
+    return new Promise(resolve => {
+      const images = [];
+      let current = 1;
+      let consecutiveFails = 0;
+
+      function finish() {
+        if (onComplete) onComplete(images);
+        resolve(images);
+      }
+
+      function tryNext() {
+        if (current > maxAttempts || consecutiveFails >= stopAfterFails) {
+          finish();
+          return;
         }
 
-        tryNext();
+        const img = new Image();
+        const path = `images/${folder}/${current}.jpg`;
+
+        img.decoding = 'async';
+        if (current <= priorityCount) {
+          img.loading = 'eager';
+          img.fetchPriority = 'high';
+        } else {
+          img.loading = 'lazy';
+          img.fetchPriority = 'auto';
+        }
+
+        img.onload = function() {
+          images.push(path);
+          consecutiveFails = 0;
+          if (onFound) onFound(path, images.length - 1, images);
+          current++;
+          tryNext();
+        };
+
+        img.onerror = function() {
+          consecutiveFails++;
+          current++;
+          tryNext();
+        };
+
+        img.src = path;
+      }
+
+      tryNext();
     });
   }
 
@@ -335,34 +367,91 @@
      Story Section
      ═══════════════════════════════════════════ */
 
+  function removeLoadingPlaceholder(container) {
+    if (!container) return;
+    const placeholder = container.querySelector('.loading-placeholder');
+    if (placeholder) placeholder.remove();
+  }
+
+  function appendStoryImage(src, index, storyImages) {
+    const container = $('#storyPhotos');
+    if (!container) return;
+
+    removeLoadingPlaceholder(container);
+
+    const div = document.createElement('div');
+    div.className = 'story__photo-item animate-item';
+    div.setAttribute('data-animate', 'fade-up');
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `스토리 사진 ${index + 1}`;
+    img.decoding = 'async';
+
+    // Love Story 첫 화면에 보일 가능성이 큰 앞쪽 이미지는 lazy를 쓰지 않아
+    // 스크롤 직후 하얗게 비는 시간을 줄입니다.
+    if (index < 4) {
+      img.loading = 'eager';
+      img.fetchPriority = 'high';
+    } else {
+      img.loading = 'lazy';
+      img.fetchPriority = 'auto';
+    }
+
+    div.appendChild(img);
+    div.addEventListener('click', () => openPhotoModal(storyImages, index));
+    container.appendChild(div);
+  }
+
   function initStory(storyImages) {
     $('#storyTitle').textContent = CONFIG.story.title;
     $('#storyContent').textContent = CONFIG.story.content;
 
     const container = $('#storyPhotos');
-    const placeholder = container.querySelector('.loading-placeholder');
-    if (placeholder) placeholder.remove();
+    removeLoadingPlaceholder(container);
 
     if (storyImages.length === 0) return;
 
-    storyImages.forEach((src, i) => {
-      const div = document.createElement('div');
-      div.className = 'story__photo-item animate-item';
-      div.setAttribute('data-animate', 'fade-up');
-      div.innerHTML = `<img src="${src}" alt="스토리 사진 ${i + 1}" loading="lazy">`;
-      div.addEventListener('click', () => openPhotoModal(storyImages, i));
-      container.appendChild(div);
-    });
+    storyImages.forEach((src, i) => appendStoryImage(src, i, storyImages));
   }
 
   /* ═══════════════════════════════════════════
      Gallery Section
      ═══════════════════════════════════════════ */
 
+  function appendGalleryImage(src, index, galleryImages) {
+    const grid = $('#galleryGrid');
+    if (!grid) return;
+
+    removeLoadingPlaceholder(grid);
+
+    const div = document.createElement('div');
+    div.className = 'gallery__item animate-item';
+    div.setAttribute('data-animate', 'fade-up');
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `갤러리 사진 ${index + 1}`;
+    img.decoding = 'async';
+
+    // 갤러리는 Love Story보다 아래에 있지만, 사용자가 빠르게 스크롤하면 바로 보여야 하므로
+    // 앞쪽 몇 장은 lazy 지연 없이 붙이고, 나머지는 브라우저가 적절히 조절하게 둡니다.
+    if (index < 6) {
+      img.loading = 'eager';
+      img.fetchPriority = 'auto';
+    } else {
+      img.loading = 'lazy';
+      img.fetchPriority = 'low';
+    }
+
+    div.appendChild(img);
+    div.addEventListener('click', () => openPhotoModal(galleryImages, index));
+    grid.appendChild(div);
+  }
+
   function initGallery(galleryImages) {
     const grid = $('#galleryGrid');
-    const placeholder = grid.querySelector('.loading-placeholder');
-    if (placeholder) placeholder.remove();
+    removeLoadingPlaceholder(grid);
 
     if (galleryImages.length === 0) {
       const gallerySection = $('#gallery');
@@ -370,14 +459,72 @@
       return;
     }
 
-    galleryImages.forEach((src, i) => {
-      const div = document.createElement('div');
-      div.className = 'gallery__item animate-item';
-      div.setAttribute('data-animate', 'fade-up');
-      div.innerHTML = `<img src="${src}" alt="갤러리 사진 ${i + 1}" loading="lazy">`;
-      div.addEventListener('click', () => openPhotoModal(galleryImages, i));
-      grid.appendChild(div);
-    });
+    galleryImages.forEach((src, i) => appendGalleryImage(src, i, galleryImages));
+  }
+
+  function setImageWithExtensionFallback(img, folder, number, imageList, index) {
+    // GitHub Pages는 파일명 대소문자와 확장자를 엄격하게 구분합니다.
+    // 1.jpg~30.jpg를 기본으로 쓰되, 혹시 일부 파일이 jpeg/png/webp 또는 대문자 확장자로
+    // 올라가 있어도 해당 번호 칸이 사라지지 않게 순차적으로 보정합니다.
+    const candidates = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP']
+      .map((ext) => `images/${folder}/${number}.${ext}`);
+    let attempt = 0;
+
+    img.onload = function () {
+      if (Array.isArray(imageList)) imageList[index] = img.currentSrc || img.src;
+    };
+
+    img.onerror = function () {
+      attempt += 1;
+      if (attempt < candidates.length) {
+        img.src = candidates[attempt];
+      }
+    };
+
+    img.src = candidates[0];
+  }
+
+  function appendFixedGalleryImage(src, index, galleryImages) {
+    const grid = $('#galleryGrid');
+    if (!grid) return;
+
+    removeLoadingPlaceholder(grid);
+
+    const div = document.createElement('div');
+    div.className = 'gallery__item animate-item';
+    div.setAttribute('data-animate', 'fade-up');
+
+    const img = document.createElement('img');
+    img.alt = `갤러리 사진 ${index + 1}`;
+    img.decoding = 'async';
+
+    // 1~30장을 먼저 DOM에 모두 올려두고, 실제 파일은 브라우저가 순차적으로 받아오게 합니다.
+    // 이렇게 해야 자동탐색 실패 조건 때문에 2장만 나오고 멈추는 문제가 생기지 않습니다.
+    if (index < 8) {
+      img.loading = 'eager';
+      img.fetchPriority = index < 3 ? 'high' : 'auto';
+    } else {
+      img.loading = 'lazy';
+      img.fetchPriority = 'low';
+    }
+
+    setImageWithExtensionFallback(img, 'gallery', index + 1, galleryImages, index);
+
+    div.appendChild(img);
+    div.addEventListener('click', () => openPhotoModal(galleryImages, index));
+    grid.appendChild(div);
+  }
+
+  function initFixedGallery(totalCount) {
+    const grid = $('#galleryGrid');
+    removeLoadingPlaceholder(grid);
+
+    const galleryImages = Array.from(
+      { length: totalCount },
+      (_, i) => `images/gallery/${i + 1}.jpg`
+    );
+
+    galleryImages.forEach((src, i) => appendFixedGalleryImage(src, i, galleryImages));
   }
 
   /* ═══════════════════════════════════════════
@@ -615,7 +762,7 @@
      Init
      ═══════════════════════════════════════════ */
 
-  async function init() {
+  function init() {
     setMetaTags();
     initCurtain();
     initHero();
@@ -634,14 +781,21 @@
     $('#storyTitle').textContent = CONFIG.story.title;
     $('#storyContent').textContent = CONFIG.story.content;
 
-    // Auto-detect images in parallel
-    const [storyImages, galleryImages] = await Promise.all([
-      loadImagesFromFolder('story'),
-      loadImagesFromFolder('gallery')
-    ]);
+    // Auto-detect images.
+    // story는 발견 즉시 렌더링하고, gallery는 1~30장이 확정되어 있으므로
+    // 자동탐색 실패 조건에 걸리지 않도록 고정 목록으로 먼저 렌더링합니다.
+    loadImagesFromFolder('story', 50, {
+      stopAfterFails: 2,
+      priorityCount: 4,
+      onFound: appendStoryImage,
+      onComplete: (storyImages) => {
+        if (storyImages.length === 0) removeLoadingPlaceholder($('#storyPhotos'));
+      }
+    });
 
-    initStory(storyImages);
-    initGallery(galleryImages);
+    // 갤러리는 실제 파일 개수가 1~30으로 정해져 있으므로 자동탐색으로 중간에 멈추지 않고
+    // 30장을 고정 렌더링합니다.
+    initFixedGallery(30);
   }
 
   if (document.readyState === 'loading') {
